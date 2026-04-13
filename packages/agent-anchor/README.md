@@ -1,9 +1,9 @@
-# adp-agent-anchor
+# @ai-manifests/adp-agent-anchor
 
-Optional Neo3 blockchain anchor for [adp-agent](https://git.marketally.com/ai-manifests/adp-agent). Commits signed calibration snapshots to a Neo3-compatible chain on a schedule for third-party tamper evidence.
+Optional Neo3 blockchain anchor for [`@ai-manifests/adp-agent`](https://git.marketally.com/ai-manifests/adp-agent). Commits signed calibration snapshots to a Neo3-compatible chain on a schedule for third-party tamper evidence.
 
 ```bash
-npm install adp-agent adp-agent-anchor
+npm install @ai-manifests/adp-agent @ai-manifests/adp-agent-anchor
 ```
 
 ## Why it's optional
@@ -31,8 +31,8 @@ All four targets use the same `Neo3BlockchainStore` client and the same `Calibra
 ## Usage
 
 ```ts
-import { AdpAgent } from 'adp-agent';
-import { createAnchorStore, CalibrationAnchorScheduler } from 'adp-agent-anchor';
+import { AdpAgent } from '@ai-manifests/adp-agent';
+import { createAnchorStore, CalibrationAnchorScheduler } from '@ai-manifests/adp-agent-anchor';
 
 const agent = new AdpAgent(config);
 

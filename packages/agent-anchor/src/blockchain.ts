@@ -1,4 +1,4 @@
-import type { JournalEntry } from 'adp-agent';
+import type { JournalEntry } from '@ai-manifests/adp-agent';
 
 /**
  * A calibration record stored on-chain.

@@ -1,8 +1,11 @@
 {
-  "name": "adp-agent-anchor",
+  "name": "@ai-manifests/adp-agent-anchor",
   "version": "0.1.0",
-  "description": "Neo3 blockchain anchor for ADP calibration snapshots. Optional extension to adp-agent that periodically commits signed calibration snapshots to a Neo3-compatible chain.",
+  "description": "Neo3 blockchain anchor for ADP calibration snapshots. Optional extension to @ai-manifests/adp-agent that periodically commits signed calibration snapshots to a Neo3-compatible chain.",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -36,7 +39,7 @@
   },
   "dependencies": {
     "@cityofzion/neon-js": "^5.8.1",
-    "adp-agent": "0.1.0"
+    "@ai-manifests/adp-agent": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0"

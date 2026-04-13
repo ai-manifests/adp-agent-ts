@@ -22,8 +22,8 @@
 
 import { rpc, sc, tx, wallet, u, CONST } from '@cityofzion/neon-js';
 import type { CalibrationRecord, BlockchainCalibrationStore } from './blockchain.js';
-import type { JournalEntry } from 'adp-agent';
-import { computeCalibration } from 'adp-agent';
+import type { JournalEntry } from '@ai-manifests/adp-agent';
+import { computeCalibration } from '@ai-manifests/adp-agent';
 
 export interface Neo3StoreOptions {
   rpcUrl: string;

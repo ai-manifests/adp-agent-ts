@@ -19,11 +19,11 @@ import type {
   CalibrationAnchorConfig,
   CalibrationAnchorTarget,
   JournalEntry,
-} from 'adp-agent';
+} from '@ai-manifests/adp-agent';
 import type { BlockchainCalibrationStore, CalibrationRecord } from './blockchain.js';
 import { MockBlockchainStore } from './blockchain-mock.js';
 import { Neo3BlockchainStore } from './blockchain-neo3.js';
-import { buildSnapshot } from 'adp-agent';
+import { buildSnapshot } from '@ai-manifests/adp-agent';
 
 /** Default cadence: hourly. Operators with active federations may want shorter. */
 const DEFAULT_PUBLISH_INTERVAL_S = 3600;

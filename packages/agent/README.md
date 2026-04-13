@@ -1,15 +1,15 @@
-# adp-agent
+# @ai-manifests/adp-agent
 
 Reference implementation of the [Agent Deliberation Protocol](https://adp-manifest.dev). Build a federation-ready agent with:
 
 ```bash
-npm install adp-agent
+npm install @ai-manifests/adp-agent
 ```
 
 ## Minimal use
 
 ```ts
-import { AdpAgent, type AgentConfig } from 'adp-agent';
+import { AdpAgent, type AgentConfig } from '@ai-manifests/adp-agent';
 
 const config: AgentConfig = {
   agentId: 'did:adp:my-agent-v1',
@@ -73,8 +73,8 @@ interface AdpAgentOptions {
 Default is JSONL. For production, use SQLite:
 
 ```ts
-import { SqliteJournal } from 'adp-agent/journal-sqlite';
-import { AdpAgent } from 'adp-agent';
+import { SqliteJournal } from '@ai-manifests/adp-agent/journal-sqlite';
+import { AdpAgent } from '@ai-manifests/adp-agent';
 
 const journal = new SqliteJournal('/var/lib/adp/journal.db');
 const agent = new AdpAgent(config, { journal });
@@ -105,7 +105,7 @@ All exports live on the default entry point. Deep imports are not supported.
 
 - **Class**: `AdpAgent`
 - **Types**: `AgentConfig`, `AgentManifest`, `Proposal`, `JournalEntry`, `AcbBudget`, `CalibrationAnchorConfig`, and every other protocol type
-- **Journal**: `JournalStore`, `JsonlJournal`, `DeliberationRecord` (plus `SqliteJournal` via the `adp-agent/journal-sqlite` subpath)
+- **Journal**: `JournalStore`, `JsonlJournal`, `DeliberationRecord` (plus `SqliteJournal` via the `@ai-manifests/adp-agent/journal-sqlite` subpath)
 - **Protocol primitives**: `computeWeight`, `computeTally`, `determineTermination`, `computeCalibration`, `generateId`
 - **Deliberation**: `PeerDeliberation`, `HttpTransport`, `DeliberationResult`, `PeerTransport`
 - **Signing**: `generateKeyPair`, `signProposal`, `verifyProposal`, `canonicalize`
@@ -121,7 +121,7 @@ All exports live on the default entry point. Deep imports are not supported.
 For third-party tamper evidence, install the optional anchor package:
 
 ```bash
-npm install adp-agent-anchor
+npm install @ai-manifests/adp-agent-anchor
 ```
 
 See [`adp-agent-anchor` README](../agent-anchor/README.md) for wiring.

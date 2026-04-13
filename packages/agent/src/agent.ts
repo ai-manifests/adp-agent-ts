@@ -5,7 +5,7 @@
  * publishing + MCP + ACB) into a single class adopters instantiate with a
  * config. Minimal use:
  *
- *     import { AdpAgent } from 'adp-agent';
+ *     import { AdpAgent } from '@ai-manifests/adp-agent';
  *     const agent = new AdpAgent(config);
  *     await agent.start();
  *

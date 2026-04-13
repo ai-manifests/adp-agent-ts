@@ -8,8 +8,8 @@
  *
  * Minimal use:
  *
- *     import { AdpAgent } from 'adp-agent';
- *     import { createAnchorStore, CalibrationAnchorScheduler } from 'adp-agent-anchor';
+ *     import { AdpAgent } from '@ai-manifests/adp-agent';
+ *     import { createAnchorStore, CalibrationAnchorScheduler } from '@ai-manifests/adp-agent-anchor';
  *
  *     const agent = new AdpAgent(config);
  *     if (config.calibrationAnchor?.enabled) {

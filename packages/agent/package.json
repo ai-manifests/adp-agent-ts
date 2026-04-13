@@ -1,8 +1,11 @@
 {
-  "name": "adp-agent",
+  "name": "@ai-manifests/adp-agent",
   "version": "0.1.0",
   "description": "Reference implementation of the Agent Deliberation Protocol (ADP). Protocol runtime for agents that deliberate, sign proposals, journal outcomes, and publish signed calibration snapshots.",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

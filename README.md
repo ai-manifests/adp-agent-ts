@@ -4,8 +4,8 @@ Reference implementation of the [Agent Deliberation Protocol](https://adp-manife
 
 | Package | Description |
 |---|---|
-| [`adp-agent`](packages/agent) | Protocol runtime — `AdpAgent` class, deliberation state machine, journal (JSONL + optional SQLite), Ed25519 signing, signed calibration snapshots (ADJ §7.4), ACB pricing/settlement, MCP tool server, middleware. The thing you install to build an ADP-compliant agent. |
-| [`adp-agent-anchor`](packages/agent-anchor) | Optional Neo3 blockchain anchor. Periodically commits signed calibration snapshots to a Neo3-compatible chain for third-party tamper evidence. Depends on `adp-agent`; pulls in `@cityofzion/neon-js`. |
+| [`@ai-manifests/adp-agent`](packages/agent) | Protocol runtime — `AdpAgent` class, deliberation state machine, journal (JSONL + optional SQLite), Ed25519 signing, signed calibration snapshots (ADJ §7.4), ACB pricing/settlement, MCP tool server, middleware. The thing you install to build an ADP-compliant agent. |
+| [`@ai-manifests/adp-agent-anchor`](packages/agent-anchor) | Optional Neo3 blockchain anchor. Periodically commits signed calibration snapshots to a Neo3-compatible chain for third-party tamper evidence. Depends on `@ai-manifests/adp-agent`; pulls in `@cityofzion/neon-js`. |
 
 Companion repo: [`adp-agent-template`](https://git.marketally.com/ai-manifests/adp-agent-template) — a forkable starter that depends on these packages and gives new adopters a 30-second clone-and-run.
 
@@ -18,15 +18,15 @@ ADJ             declares how those agreements are recorded and scored
 ACB             declares how the cognitive work of agreeing is paid for
 ```
 
-- `adp-agent` implements all four specs' runtime surface for a single agent
-- `adp-agent-anchor` is strictly optional — the always-on signed calibration snapshot at `.well-known/adp-calibration.json` (ADJ §7.4) is the day-to-day trust mechanism; the chain anchor is the survives-everything tamper-evidence layer for operators who want it
+- `@ai-manifests/adp-agent` implements all four specs' runtime surface for a single agent
+- `@ai-manifests/adp-agent-anchor` is strictly optional — the always-on signed calibration snapshot at `.well-known/adp-calibration.json` (ADJ §7.4) is the day-to-day trust mechanism; the chain anchor is the survives-everything tamper-evidence layer for operators who want it
 
 ## Quickstart
 
-Minimal usage from the `adp-agent` package:
+Minimal usage from the `@ai-manifests/adp-agent` package:
 
 ```ts
-import { AdpAgent, JsonlJournal, type AgentConfig } from 'adp-agent';
+import { AdpAgent, JsonlJournal, type AgentConfig } from '@ai-manifests/adp-agent';
 
 const config: AgentConfig = {
   agentId: 'did:adp:my-agent-v1',
@@ -51,8 +51,8 @@ That's the entire adoption surface. The library handles manifest serving, calibr
 ## With optional chain anchoring
 
 ```ts
-import { AdpAgent } from 'adp-agent';
-import { createAnchorStore, CalibrationAnchorScheduler } from 'adp-agent-anchor';
+import { AdpAgent } from '@ai-manifests/adp-agent';
+import { createAnchorStore, CalibrationAnchorScheduler } from '@ai-manifests/adp-agent-anchor';
 
 const agent = new AdpAgent(config);
 const store = createAnchorStore(config.calibrationAnchor);
@@ -84,7 +84,7 @@ Requires Node.js 20+. The monorepo uses npm workspaces; `npm install` from the r
 ```
 adp-agent/
 ├── packages/
-│   ├── agent/               # @adp-agent → adp-agent (npm)
+│   ├── agent/               # @ai-manifests/adp-agent (npm)
 │   │   ├── src/
 │   │   │   ├── agent.ts              # AdpAgent class (public API)
 │   │   │   ├── index.ts              # Barrel export
@@ -103,7 +103,7 @@ adp-agent/
 │   │   │   └── middleware/           # auth, rate-limit, journal-validator
 │   │   ├── package.json
 │   │   └── tsconfig.json
-│   └── agent-anchor/        # adp-agent-anchor (npm)
+│   └── agent-anchor/        # @ai-manifests/adp-agent-anchor (npm)
 │       ├── src/
 │       │   ├── index.ts              # Barrel export
 │       │   ├── blockchain.ts         # BlockchainCalibrationStore interface
