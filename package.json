@@ -1,0 +1,28 @@
+{
+  "name": "adp-agent-monorepo",
+  "version": "0.1.0",
+  "description": "Reference implementation of the Agent Deliberation Protocol. Monorepo for adp-agent and adp-agent-anchor.",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo"
+  },
+  "license": "CC0-1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://git.marketally.com/ai-manifests/adp-agent"
+  },
+  "homepage": "https://adp-manifest.dev",
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0"
+  }
+}
