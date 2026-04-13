@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adp-manifest.dev/schema/agent-config/v0.json",
+  "title": "ADP Agent Config",
+  "description": "Configuration object consumed by the `adp-agent` library's AdpAgent class. Describes an agent's identity, decision classes, peers, plugins, and optional ACB / anchor settings. This schema is the source of truth for editor autocomplete and config validation.",
+  "type": "object",
+  "required": [
+    "agentId",
+    "port",
+    "domain",
+    "decisionClasses",
+    "authorities",
+    "stakeMagnitude",
+    "defaultVote",
+    "defaultConfidence",
+    "dissentConditions",
+    "falsificationResponses",
+    "journalDir"
+  ],
+  "properties": {
+    "agentId": {
+      "type": "string",
+      "description": "DID of this agent (e.g. did:adp:test-runner-v2). Globally unique within a federation.",
+      "pattern": "^did:[a-z0-9]+:[A-Za-z0-9_.-]+$"
+    },
+    "port": {
+      "type": "integer",
+      "description": "HTTP port the agent listens on.",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "domain": {
+      "type": "string",
+      "description": "Canonical domain serving the agent's .well-known/adp-manifest.json. Used in manifest URLs and peer discovery."
+    },
+    "decisionClasses": {
+      "type": "array",
+      "description": "Decision classes the agent claims authority over (e.g. 'code.correctness', 'security.policy').",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "authorities": {
+      "type": "object",
+      "description": "Map of decision class → declared authority in [0, 1]. Peers audit these against recomputed calibration over time.",
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "stakeMagnitude": {
+      "type": "string",
+      "description": "How much the agent has at stake in each deliberation. Affects weighting under ADP §4.",
+      "enum": ["low", "medium", "high"]
+    },
+    "defaultVote": {
+      "type": "string",
+      "description": "Fallback vote when the evaluator is absent or errors.",
+      "enum": ["approve", "reject", "abstain"]
+    },
+    "defaultConfidence": {
+      "type": "number",
+      "description": "Fallback confidence in [0, 1] when the evaluator is absent or errors.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "dissentConditions": {
+      "type": "array",
+      "description": "Enumerable conditions under which the agent would vote differently. Must be falsifiable — the federation tests these in belief-update rounds.",
+      "items": { "type": "string" }
+    },
+    "falsificationResponses": {
+      "type": "object",
+      "description": "Map of condition_id → response when another agent submits falsification evidence against that condition.",
+      "additionalProperties": {
+        "enum": ["acknowledge", "reject"]
+      }
+    },
+    "journalDir": {
+      "type": "string",
+      "description": "Filesystem path where the journal stores deliberation records. For JsonlJournal, this is a directory of .jsonl files."
+    },
+    "evaluator": {
+      "description": "Optional evaluator plugin config. If absent, the agent falls back to defaultVote/defaultConfidence.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "static" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "command"],
+          "properties": {
+            "kind": { "const": "shell" },
+            "command": { "type": "string", "description": "Shell command to run. Exit 0 = approve, non-zero = reject. JSON stdout parses as EvaluationResult." },
+            "workDir": { "type": "string" },
+            "timeoutMs": { "type": "integer", "minimum": 1 },
+            "parseOutput": { "enum": ["json", "exit-code"] },
+            "allowedCommands": {
+              "type": "array",
+              "description": "Sandbox — if set, the command must start with one of these prefixes.",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      ]
+    },
+    "peers": {
+      "type": "array",
+      "description": "Known peers for P2P deliberation. Empty for standalone agents; populated after joining a federation.",
+      "items": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "agentId": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "transport": { "enum": ["http", "mcp"] }
+        }
+      }
+    },
+    "initiator": {
+      "type": "boolean",
+      "description": "Whether this agent can initiate deliberations. Default false."
+    },
+    "plugins": {
+      "type": "object",
+      "description": "Optional plugin configs — extensible, format depends on the plugin.",
+      "properties": {
+        "evaluator": { "type": "object" },
+        "trigger": { "type": "object", "required": ["kind"] },
+        "outcome": { "type": "object", "required": ["kind"] }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "description": "Authentication and Ed25519 signing config. Secrets should come from env vars, not the config file.",
+      "required": ["bearerToken", "peerTokens"],
+      "properties": {
+        "bearerToken": { "type": "string", "description": "Token peers must send in Authorization: Bearer <token> on protected endpoints." },
+        "peerTokens": {
+          "type": "object",
+          "description": "Map of peer agentId → bearer token to use when calling them.",
+          "additionalProperties": { "type": "string" }
+        },
+        "privateKey": { "type": "string", "description": "Ed25519 private key (hex) for signing proposals and calibration snapshots." },
+        "publicKey": { "type": "string", "description": "Ed25519 public key (hex) published in manifest for verification." },
+        "allowUnsignedLocal": {
+          "type": "boolean",
+          "description": "Allow unsigned proposals from localhost. Testing only."
+        }
+      }
+    },
+    "allowedPeers": {
+      "type": "array",
+      "description": "If set, only these peer agentIds are allowed to participate. Sybil resistance.",
+      "items": { "type": "string" }
+    },
+    "acbDefaults": {
+      "type": "object",
+      "description": "ACB (cognitive budget) defaults applied when a deliberation is started with useDefaultBudget=true.",
+      "required": ["amountTotal", "budgetAuthority"],
+      "properties": {
+        "amountTotal": { "type": "number", "minimum": 0 },
+        "budgetAuthority": { "type": "string", "description": "DID of the principal that authorizes budgets." },
+        "denomination": {
+          "type": "object",
+          "properties": {
+            "unit": { "const": "EU" },
+            "externalUnit": { "type": "string" },
+            "externalRate": { "type": "number", "minimum": 0 },
+            "rateSource": { "type": "string" }
+          }
+        },
+        "pricing": { "type": "object" },
+        "settlement": { "type": "object" }
+      }
+    },
+    "calibrationAnchor": {
+      "type": "object",
+      "description": "Optional Neo3 blockchain anchor config. Requires the adp-agent-anchor package to be installed.",
+      "required": ["enabled", "target"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "target": {
+          "enum": ["mock", "neo-express", "neo-custom", "neo-testnet", "neo-mainnet"],
+          "description": "Which chain to anchor to. 'mock' is for tests only."
+        },
+        "rpcUrl": { "type": "string", "format": "uri" },
+        "contractHash": {
+          "type": "string",
+          "description": "Hex contract hash of the deployed CalibrationStore contract (with or without 0x prefix).",
+          "pattern": "^(0x)?[a-fA-F0-9]{40}$"
+        },
+        "privateKey": { "type": "string", "description": "Ed25519 private key (hex) for the anchor wallet. Prefer env var ADP_ANCHOR_PRIVATE_KEY." },
+        "networkMagic": { "type": "integer" },
+        "publishIntervalSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "description": "How often to publish the current calibration snapshot. Default 3600 (1 hour)."
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
