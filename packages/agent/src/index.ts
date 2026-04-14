@@ -71,6 +71,7 @@ export type { DeliberationResult, DeliberationRunOptions, PeerTransport } from '
 export {
   generateKeyPair,
   canonicalize,
+  canonicalizeValue,
   signProposal,
   verifyProposal,
 } from './signing.js';

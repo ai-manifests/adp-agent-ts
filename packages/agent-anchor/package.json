@@ -1,6 +1,6 @@
 {
   "name": "@ai-manifests/adp-agent-anchor",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Neo3 blockchain anchor for ADP calibration snapshots. Optional extension to @ai-manifests/adp-agent that periodically commits signed calibration snapshots to a Neo3-compatible chain.",
   "author": "David H. Friedel Jr. — MarketAlly",
   "type": "module",
@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@cityofzion/neon-js": "^5.8.1",
-    "@ai-manifests/adp-agent": "^0.2.0"
+    "@ai-manifests/adp-agent": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0"

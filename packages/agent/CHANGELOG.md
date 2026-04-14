@@ -5,6 +5,20 @@ All notable changes to `@ai-manifests/adp-agent` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-04-14
+
+### Changed (breaking)
+- **`canonicalize` now produces a correct recursive canonical JSON form.** The previous implementation passed `Object.keys(copy).sort()` as the `replacer` argument to `JSON.stringify`, which — per the `replacer`-as-array semantics — silently dropped every nested object field whose name did not happen to match a top-level proposal key. In practice the old algorithm signed only top-level scalars and produced something like `{"agentId":"x","justification":{},"dissentConditions":[{}]}` regardless of what was actually inside `justification` or `dissentConditions`. That was both an integrity hole (nested tampering went undetected) and a cross-language incompatibility (any sane C# / Python canonicalize would produce different bytes).
+- The new `canonicalize` recursively sorts object keys at every level, preserves array order, and serializes primitives via standard JSON — a simplified RFC 8785 (JCS) variant sufficient for ADP data shapes.
+- **Signatures produced by `0.2.x` and earlier will NOT verify against `0.3.0` and later.** Signatures are ephemeral (one per deliberation round) so nothing persistent is affected, but any federation running a mix of `0.2.x` and `0.3.0` agents will fail signature verification on peer proposals until all peers upgrade.
+
+### Added
+- `canonicalizeValue(value)` exported alongside `canonicalize(proposal)` — the underlying recursive serializer, exposed for golden-vector testing and cross-language parity validation.
+
+### Migration
+- Upgrade every peer in a federation simultaneously. Do not run a mixed `0.2.x` / `0.3.0` federation.
+- If you pinned `0.2.1` anywhere in a `package.json` you control, bump to `^0.3.0`.
+
 ## [0.2.1] - 2026-04-14
 
 ### Fixed
