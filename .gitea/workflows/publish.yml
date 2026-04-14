@@ -1,0 +1,42 @@
+name: Build and Publish npm Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: linux
+    steps:
+      - name: Checkout
+        run: |
+          git clone "${{ github.server_url }}/${{ github.repository }}.git" .
+          git checkout ${{ github.sha }}
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure Gitea npm registry
+        run: |
+          cat > ~/.npmrc <<EOF
+          @ai-manifests:registry=https://git.marketally.com/api/packages/ai-manifests/npm/
+          //git.marketally.com/api/packages/ai-manifests/npm/:_authToken=${{ secrets.GITEATOKEN }}
+          EOF
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build all workspaces
+        run: npm run build
+
+      - name: Publish @ai-manifests/adp-agent
+        run: npm publish --access public
+        working-directory: packages/agent
+
+      - name: Publish @ai-manifests/adp-agent-anchor
+        run: npm publish --access public
+        working-directory: packages/agent-anchor
