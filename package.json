@@ -12,7 +12,7 @@
     "test": "npm run test --workspaces --if-present",
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo"
   },
-  "license": "CC0-1.0",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://git.marketally.com/ai-manifests/adp-agent"

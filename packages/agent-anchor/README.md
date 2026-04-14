@@ -97,4 +97,4 @@ Value is scaled to an integer in [0, 10000] for 4-decimal precision.
 
 ## License
 
-CC0-1.0 — treat as public domain.
+Apache-2.0 — see [`LICENSE`](LICENSE) for the full text.

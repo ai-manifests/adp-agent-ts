@@ -128,4 +128,4 @@ See [`adp-agent-anchor` README](../agent-anchor/README.md) for wiring.
 
 ## License
 
-CC0-1.0 — treat as public domain.
+Apache-2.0 — see [`LICENSE`](LICENSE) for the full text.

@@ -137,4 +137,4 @@ The [federation prototype](https://git.marketally.com/ai-manifests/adp-federatio
 
 ## License
 
-CC0-1.0 — treat as public domain.
+Apache-2.0 — see [`LICENSE`](packages/agent/LICENSE) for the full text.
