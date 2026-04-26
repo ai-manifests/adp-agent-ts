@@ -1,5 +1,11 @@
 # adp-agent
 
+[![@ai-manifests/adp-agent](https://img.shields.io/npm/v/@ai-manifests/adp-agent.svg?label=%40ai-manifests%2Fadp-agent)](https://www.npmjs.com/package/@ai-manifests/adp-agent)
+[![@ai-manifests/adp-agent-anchor](https://img.shields.io/npm/v/@ai-manifests/adp-agent-anchor.svg?label=%40ai-manifests%2Fadp-agent-anchor)](https://www.npmjs.com/package/@ai-manifests/adp-agent-anchor)
+[![Downloads](https://img.shields.io/npm/dm/@ai-manifests/adp-agent.svg?label=adp-agent%20downloads)](https://www.npmjs.com/package/@ai-manifests/adp-agent)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](packages/agent/LICENSE)
+[![Spec](https://img.shields.io/badge/spec-adp--manifest.dev-informational)](https://adp-manifest.dev)
+
 Reference implementation of the [Agent Deliberation Protocol](https://adp-manifest.dev). Monorepo for two npm packages plus a JSON Schema for config validation.
 
 | Package | Description |

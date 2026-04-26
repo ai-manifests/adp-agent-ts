@@ -1,6 +1,12 @@
 # @ai-manifests/adp-agent-anchor
 
-Optional Neo3 blockchain anchor for [`@ai-manifests/adp-agent`](https://git.marketally.com/ai-manifests/adp-agent). Commits signed calibration snapshots to a Neo3-compatible chain on a schedule for third-party tamper evidence.
+[![npm](https://img.shields.io/npm/v/@ai-manifests/adp-agent-anchor.svg?label=npm)](https://www.npmjs.com/package/@ai-manifests/adp-agent-anchor)
+[![Downloads](https://img.shields.io/npm/dm/@ai-manifests/adp-agent-anchor.svg)](https://www.npmjs.com/package/@ai-manifests/adp-agent-anchor)
+[![Node](https://img.shields.io/badge/node-20%2B-blue.svg)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Spec](https://img.shields.io/badge/spec-adp--manifest.dev-informational)](https://adp-manifest.dev)
+
+Optional Neo3 blockchain anchor for [`@ai-manifests/adp-agent`](https://www.npmjs.com/package/@ai-manifests/adp-agent). Commits signed calibration snapshots to a Neo3-compatible chain on a schedule for third-party tamper evidence.
 
 ```bash
 npm install @ai-manifests/adp-agent @ai-manifests/adp-agent-anchor
@@ -86,7 +92,7 @@ The `privateKey` field should **never** go in the config file. Pass it via the `
 
 ## Smart contract
 
-The companion smart contract is [`adp-calibration-contract/CalibrationStore.cs`](https://git.marketally.com/ai-manifests/adp-calibration-contract) — a C# Neo3 contract compiled with `nccs` (Neo.Compiler.CSharp). Deploy once per chain; capture the contract hash into `config.calibrationAnchor.contractHash`.
+The companion smart contract is `CalibrationStore.cs` — a C# Neo3 contract compiled with `nccs` (Neo.Compiler.CSharp). Deploy once per chain; capture the contract hash into `config.calibrationAnchor.contractHash`.
 
 The contract has two public operations:
 

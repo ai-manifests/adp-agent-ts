@@ -1,5 +1,11 @@
 # @ai-manifests/adp-agent
 
+[![npm](https://img.shields.io/npm/v/@ai-manifests/adp-agent.svg?label=npm)](https://www.npmjs.com/package/@ai-manifests/adp-agent)
+[![Downloads](https://img.shields.io/npm/dm/@ai-manifests/adp-agent.svg)](https://www.npmjs.com/package/@ai-manifests/adp-agent)
+[![Node](https://img.shields.io/badge/node-20%2B-blue.svg)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Spec](https://img.shields.io/badge/spec-adp--manifest.dev-informational)](https://adp-manifest.dev)
+
 Reference implementation of the [Agent Deliberation Protocol](https://adp-manifest.dev). Build a federation-ready agent with:
 
 ```bash
@@ -41,7 +47,7 @@ That's all. The library handles:
 - **Health check** at `/healthz`
 - **Ed25519 proposal signing**, **Brier-score calibration**, **journal append/query**
 
-You only write the **evaluator** — the thing that produces votes. See [`adp-agent-template`](https://git.marketally.com/ai-manifests/adp-agent-template) for the full pattern.
+You only write the **evaluator** — the thing that produces votes. See [`adp-agent-template`](https://github.com/ai-manifests/adp-agent-template) for the full pattern.
 
 ## AdpAgent class
 
