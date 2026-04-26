@@ -7,7 +7,7 @@ Reference implementation of the [Agent Deliberation Protocol](https://adp-manife
 | [`@ai-manifests/adp-agent`](packages/agent) | Protocol runtime — `AdpAgent` class, deliberation state machine, journal (JSONL + optional SQLite), Ed25519 signing, signed calibration snapshots (ADJ §7.4), ACB pricing/settlement, MCP tool server, middleware. The thing you install to build an ADP-compliant agent. |
 | [`@ai-manifests/adp-agent-anchor`](packages/agent-anchor) | Optional Neo3 blockchain anchor. Periodically commits signed calibration snapshots to a Neo3-compatible chain for third-party tamper evidence. Depends on `@ai-manifests/adp-agent`; pulls in `@cityofzion/neon-js`. |
 
-Companion repo: [`adp-agent-template`](https://git.marketally.com/ai-manifests/adp-agent-template) — a forkable starter that depends on these packages and gives new adopters a 30-second clone-and-run.
+Companion repo: [`adp-agent-template`](https://github.com/ai-manifests/adp-agent-template) — a forkable starter that depends on these packages and gives new adopters a 30-second clone-and-run.
 
 ## Relationship to the specs
 
@@ -46,7 +46,7 @@ const agent = new AdpAgent(config);
 await agent.start();
 ```
 
-That's the entire adoption surface. The library handles manifest serving, calibration snapshot publishing, deliberation, journal, ACB, MCP, and signing. You only write the evaluator that produces votes — see the [template repo](https://git.marketally.com/ai-manifests/adp-agent-template) for the full pattern.
+That's the entire adoption surface. The library handles manifest serving, calibration snapshot publishing, deliberation, journal, ACB, MCP, and signing. You only write the evaluator that produces votes — see the [template repo](https://github.com/ai-manifests/adp-agent-template) for the full pattern.
 
 ## With optional chain anchoring
 
@@ -133,7 +133,7 @@ adp-agent/
 
 ## Reference deployment
 
-The [federation prototype](https://git.marketally.com/ai-manifests/adp-federation-prototype) on CT 128 is the canonical "what a real 4-agent production federation looks like" example. It depends on this library via a local file reference and is the test harness that validates the library's behavior under real traffic.
+The [federation prototype](https://github.com/ai-manifests/adp-federation-prototype) on CT 128 is the canonical "what a real 4-agent production federation looks like" example. It depends on this library via a local file reference and is the test harness that validates the library's behavior under real traffic.
 
 ## License
 
