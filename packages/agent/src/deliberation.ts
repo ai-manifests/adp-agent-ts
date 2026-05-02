@@ -31,6 +31,33 @@ export interface DeliberationRunOptions {
    *  writes a `budget_committed` entry at start and a `settlement_recorded`
    *  entry at close. */
   budget?: AcbBudget;
+
+  /**
+   * Returns whether the action under deliberation has a reversible subset
+   * that can independently commit when convergence on the whole action
+   * fails. Per ADP §7.2, partial commit requires **both** that the action
+   * is structurally decomposable AND that a reversible sub-action meets
+   * simple majority. The runner does NOT compute decomposition itself —
+   * domain knowledge about which actions are decomposable belongs to the
+   * caller (an `apply_terraform_plan` is decomposable into individual
+   * resource changes; a `merge_pull_request` is atomic).
+   *
+   * **Default: `() => false`.** Most actions are atomic, so the safe
+   * default treats every non-converged deliberation as `deadlocked`
+   * (ADP §7.3). Adopters who deliberate on decomposable actions can plug
+   * their own logic and return `true` when (a) the action's kind is
+   * decomposable AND (b) the reversible subset has been verified to meet
+   * simple majority on its own sub-tally.
+   *
+   * Returning `true` from this callback when the conditions in §7.2 do
+   * not actually hold violates the spec — the journal will record
+   * `partial_commit` but downstream tooling expects an actually-committable
+   * subset. Don't do that.
+   */
+  hasReversibleSubset?: (
+    action: { kind: string; target: string; parameters?: Record<string, string> },
+    finalTally: TallyResult,
+  ) => boolean;
 }
 
 /**
@@ -413,8 +440,14 @@ export class PeerDeliberation {
       });
     }
 
-    // 5. Close
-    const status = determineTermination(tally, true);
+    // 5. Close. ADP §7.2 / §7.3: reversibility-subset detection is the
+    //   caller's responsibility because decomposition is action-kind
+    //   specific. Default-false treats atomic-action non-convergence as
+    //   `deadlocked`, which is the spec-correct outcome for the common
+    //   case (merge_pull_request, deploy, revoke_token, …). Adopters
+    //   with decomposable actions plug their own callback.
+    const reversibleSubset = options.hasReversibleSubset?.(action, tally) ?? false;
+    const status = determineTermination(tally, reversibleSubset);
 
     this.journalEntries.push({
       entryId: generateId('adj'), entryType: 'deliberation_closed',
