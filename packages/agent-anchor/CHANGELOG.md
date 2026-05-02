@@ -5,6 +5,18 @@ All notable changes to `@ai-manifests/adp-agent-anchor` will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-05-02
+
+### Changed
+- Peer dependency `@ai-manifests/adp-agent` updated to `^0.4.0`. The
+  underlying runtime adds `PeerTransport.registerAgent` (required
+  interface method) and fixes the initiator self-URL → self-agentId
+  binding that produced 401 errors on self-proposal under bearer-token
+  auth. See `@ai-manifests/adp-agent` 0.4.0 CHANGELOG for full detail.
+- No changes to the anchor scheduler, blockchain store, or Neo3 client
+  itself. The version is bumped in lockstep so the monorepo tags one
+  coherent release across both packages.
+
 ## [0.3.0] - 2026-04-14
 
 ### Changed

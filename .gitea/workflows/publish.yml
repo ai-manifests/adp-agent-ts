@@ -33,10 +33,37 @@ jobs:
       - name: Build all workspaces
         run: npm run build
 
+      # Both packages live in the same workspace and bump independently.
+      # When only one bumped, the other returns 409 ("version already
+      # exists") on publish — that's a no-op, not a failure. We invoke
+      # npm publish plainly, capture its output, and treat 409 / "already
+      # exists" as success while still failing loudly on every other
+      # error class. This matches the Python publish step's posture and
+      # the C# `--skip-duplicate` flag.
       - name: Publish @ai-manifests/adp-agent
-        run: npm publish --access public
         working-directory: packages/agent
+        run: |
+          set +e
+          npm publish --access public 2>&1 | tee /tmp/npm-publish-agent.log
+          STATUS=${PIPESTATUS[0]}
+          if [ "$STATUS" -ne 0 ]; then
+            if grep -qiE "E409|already exists|cannot publish over" /tmp/npm-publish-agent.log; then
+              echo "::notice::adp-agent skipped: version already published"
+              exit 0
+            fi
+            exit "$STATUS"
+          fi
 
       - name: Publish @ai-manifests/adp-agent-anchor
-        run: npm publish --access public
         working-directory: packages/agent-anchor
+        run: |
+          set +e
+          npm publish --access public 2>&1 | tee /tmp/npm-publish-anchor.log
+          STATUS=${PIPESTATUS[0]}
+          if [ "$STATUS" -ne 0 ]; then
+            if grep -qiE "E409|already exists|cannot publish over" /tmp/npm-publish-anchor.log; then
+              echo "::notice::adp-agent-anchor skipped: version already published"
+              exit 0
+            fi
+            exit "$STATUS"
+          fi
