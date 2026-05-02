@@ -5,6 +5,18 @@ All notable changes to `@ai-manifests/adp-agent-anchor` will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-05-02
+
+### Changed
+- Peer dependency `@ai-manifests/adp-agent` updated to `^0.5.0`. The
+  underlying runtime fixes the ADP §7.2 / §7.3 terminal-state
+  misclassification (non-converged deliberations now default to
+  `deadlocked` instead of `partial_commit`). See
+  `@ai-manifests/adp-agent` 0.5.0 CHANGELOG for full detail and
+  migration notes.
+- No changes to the anchor scheduler, blockchain store, or Neo3 client.
+  Bumped in lockstep so the monorepo tags one coherent release.
+
 ## [0.4.0] - 2026-05-02
 
 ### Changed
