@@ -5,6 +5,46 @@ All notable changes to `@ai-manifests/adp-agent` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-05-02
+
+### Added (breaking interface change)
+- **`PeerTransport.registerAgent(peerUrl, agentId)`** — required method on the
+  `PeerTransport` interface that binds a URL to an agent id in the transport's
+  internal lookup map. Implemented by `HttpTransport` (writes to its
+  `peerAgentIds` map) and `McpTransport` (no-op; MCP routing doesn't use the
+  map). External implementors of `PeerTransport` must add this method —
+  hence the minor version bump.
+
+### Fixed
+- **Initiator self-proposal no longer 401s under bearer-token auth.** Before
+  this fix, the deliberation runner set `peerUrlMap[self.agentId] = selfUrl`
+  but never told the transport about that binding. The transport's
+  `peerAgentIds` map (URL → agentId, used by `headers()` to resolve the
+  right peer-token via `auth.peerTokens[agentId]`) only got populated as a
+  side-effect of `fetchManifest` — and the initiator never fetches its own
+  manifest because it already knows what's in it. Result: every outgoing
+  call from the deliberation runner to the self URL (the self-proposal
+  request, the self-journal calibration fetch, the journal gossip push)
+  fell back to the wildcard `'*'` lookup in `peerTokens`, which produced
+  no `Authorization` header, which made the agent's own auth middleware
+  reject the call with `401`. The deliberation aborted with `fetch failed`
+  before any journal entries were written.
+- The fix is a single new line in `PeerDeliberation.run()` after the self
+  URL is set: `this.transport.registerAgent(selfUrl, this.self.agentId)`.
+  Self-proposal calls now resolve `peerTokens[self.agentId]` correctly,
+  the agent authenticates to itself with its own bearer, and the
+  deliberation closes with a clean journal entry. Regression test:
+  `tests/deliberation.transport.test.ts`.
+
+### Migration
+- Consumers using the bundled `HttpTransport` or `McpTransport` need only
+  update the dependency — both implementations ship the new method.
+- Consumers with custom `PeerTransport` implementations must add a
+  `registerAgent(peerUrl: string, agentId: string): void` method. The
+  simplest correct implementation is `this.peerAgentIds.set(peerUrl, agentId)`
+  for HTTP-style transports, or a no-op for transports that don't use a
+  URL→agentId map.
+
 ## [0.3.0] - 2026-04-14
 
 ### Changed (breaking)

@@ -36,6 +36,13 @@ export interface DeliberationRunOptions {
 /**
  * Peer-to-peer transport interface. Abstracts how agents talk to each other.
  * Phase 3 (MCP) adds an McpTransport implementation alongside this HttpTransport.
+ *
+ * The transport owns the URL → agentId mapping that authHeaders needs to look
+ * up the right peer-token for each outgoing call. Implementations populate
+ * this map automatically as a side-effect of fetchManifest, and explicitly
+ * via registerAgent for paths that don't go through manifest fetch (notably
+ * the initiator's self URL — a deliberation's initiator never fetches its
+ * own manifest, so the deliberation runner registers it directly).
  */
 export interface PeerTransport {
   fetchManifest(peerUrl: string): Promise<AgentManifest>;
@@ -43,12 +50,21 @@ export interface PeerTransport {
   requestProposal(peerUrl: string, deliberationId: string, action: any, tier: string): Promise<Proposal>;
   sendFalsification(peerUrl: string, conditionId: string, round: number, evidenceAgentId: string): Promise<any>;
   pushJournalEntries(peerUrl: string, entries: JournalEntry[]): Promise<void>;
+  /**
+   * Bind a URL to an agentId in the transport's internal map so subsequent
+   * outgoing calls to <c>peerUrl</c> use the correct peer-token from
+   * <c>auth.peerTokens[agentId]</c>. Call this for any peer whose
+   * <c>fetchManifest</c> is not invoked through the transport — most
+   * importantly the initiator's own self URL, which is reached over the
+   * loopback / hairpin path and never goes through manifest discovery.
+   */
+  registerAgent(peerUrl: string, agentId: string): void;
 }
 
 /** HTTP transport with optional bearer token authentication. */
 export class HttpTransport implements PeerTransport {
   private auth: AuthConfig | undefined;
-  private peerAgentIds = new Map<string, string>(); // url → agentId (populated after manifest fetch)
+  private peerAgentIds = new Map<string, string>(); // url → agentId (populated by fetchManifest + registerAgent)
 
   constructor(auth?: AuthConfig) {
     this.auth = auth;
@@ -57,6 +73,10 @@ export class HttpTransport implements PeerTransport {
   private headers(peerUrl: string): Record<string, string> {
     const agentId = this.peerAgentIds.get(peerUrl) ?? '*';
     return { 'Content-Type': 'application/json', ...authHeaders(this.auth, agentId) };
+  }
+
+  registerAgent(peerUrl: string, agentId: string): void {
+    this.peerAgentIds.set(peerUrl, agentId);
   }
 
   async fetchManifest(peerUrl: string): Promise<AgentManifest> {
@@ -159,9 +179,16 @@ export class PeerDeliberation {
       this.peerUrlMap[manifest.agentId] = peer.url;
     }
 
-    // Self-manifest (the initiating agent)
+    // Self-manifest (the initiating agent). The initiator never fetches its
+    // own manifest — it already knows everything in it — so registerAgent
+    // is the only path that binds the self URL to the self agentId in the
+    // transport's URL→agentId map. Without this, outgoing self-proposal and
+    // self-journal calls fall back to the wildcard '*' peer-token lookup,
+    // which doesn't match auth.peerTokens[self.agentId] and produces a 401
+    // from the agent's own auth middleware.
     const selfUrl = `http://${this.self.domain}:${this.self.port}`;
     this.peerUrlMap[this.self.agentId] = selfUrl;
+    this.transport.registerAgent(selfUrl, this.self.agentId);
 
     const participants = [...Object.keys(this.manifests), this.self.agentId];
 

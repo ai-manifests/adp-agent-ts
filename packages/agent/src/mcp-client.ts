@@ -12,6 +12,16 @@ import type { PeerTransport } from './deliberation.js';
  */
 export class McpTransport implements PeerTransport {
 
+  /**
+   * No-op for the MCP transport. MCP routes calls to a single endpoint per
+   * peer (the peer's <c>/mcp</c> URL) and does not rely on a URL→agentId
+   * map for outgoing authentication — the MCP server itself decides whether
+   * to gate tool calls. Implemented to satisfy the PeerTransport contract.
+   */
+  registerAgent(_peerUrl: string, _agentId: string): void {
+    // intentionally empty
+  }
+
   async fetchManifest(peerUrl: string): Promise<AgentManifest> {
     // Manifest is always served via plain HTTP (.well-known)
     const res = await fetch(`${peerUrl}/.well-known/adp-manifest.json`);
