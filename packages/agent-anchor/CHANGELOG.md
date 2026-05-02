@@ -5,6 +5,13 @@ All notable changes to `@ai-manifests/adp-agent-anchor` will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-05-02
+
+### Changed
+- Peer dependency `@ai-manifests/adp-agent` bumped from `^0.5.0` → `^0.6.0`
+  to track the agent runtime's new `llm` evaluator kind. No code changes
+  in the anchor scheduler; lockstep version bump.
+
 ## [0.5.1] - 2026-05-02
 
 ### Fixed (packaging)
