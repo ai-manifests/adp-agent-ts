@@ -354,13 +354,22 @@ export class AdpAgent {
 
       journal.appendBatch([outcomeEntry]);
 
-      // Gossip to peers, best-effort
+      // Gossip to peers, best-effort. Each peer gets the per-peer token from
+      // config.peers (URL → agentId → peerTokens[agentId]). Falling back to
+      // the wildcard '*' lookup is a soft fallback for ad-hoc peerUrls that
+      // aren't in config.peers — which is the only path that will work if
+      // peerTokens has no '*' entry. Previously this hardcoded '*' for every
+      // gossip target, which 401'd silently against any federation that
+      // (correctly) uses agentId-keyed tokens with no wildcard.
+      const urlToAgentId = new Map<string, string>();
+      for (const p of config.peers ?? []) urlToAgentId.set(p.url, p.agentId);
       const urls: string[] = peerUrls || config.peers?.map((p: PeerConfig) => p.url) || [];
       for (const url of urls) {
         try {
+          const peerAgentId = urlToAgentId.get(url) ?? '*';
           await fetch(`${url}/adj/v0/entries`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders(config.auth, '*') },
+            headers: { 'Content-Type': 'application/json', ...authHeaders(config.auth, peerAgentId) },
             body: JSON.stringify([outcomeEntry]),
           });
         } catch { /* best effort */ }

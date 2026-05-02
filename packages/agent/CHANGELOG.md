@@ -5,6 +5,35 @@ All notable changes to `@ai-manifests/adp-agent` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-05-02
+
+### Fixed — `/api/record-outcome` gossip used wildcard token lookup
+
+Outcome gossip from `POST /api/record-outcome` to peer `/adj/v0/entries`
+hardcoded `authHeaders(config.auth, '*')` for the `Authorization` header.
+That looked up `peerTokens['*']` regardless of which peer was being
+contacted, so federations that (correctly) use per-agent tokens — keying
+`peerTokens` by `did:adp:peer-agent-id` with no wildcard fallback — got
+no `Authorization` header and were rejected `401` by the receiving peer's
+auth middleware. The outcome was written locally but never propagated.
+
+The fix builds a URL → agentId map from `config.peers` and uses
+`authHeaders(config.auth, peerAgentId)` per peer. The wildcard `'*'`
+remains as a soft fallback for ad-hoc URLs in the request body that
+aren't in `config.peers`.
+
+This matches the same architectural pattern the deliberation runner
+already uses via `transport.headers(peerUrl)` and `registerAgent`.
+Symptom in the field: a monitor agent's outcome plugin reports outcomes
+locally but no peer's calibration ever updates. Now fixed.
+
+### Note on cross-language parity
+- The C# port (`Adp.Agent`) does not implement outcome gossip at all —
+  `POST /api/record-outcome` writes to the local journal only. Tracked
+  for parity in a later release.
+- The Python port (`adp-agent`) follows the C# behavior on this surface
+  (local-journal write, no peer gossip).
+
 ## [0.5.0] - 2026-05-02
 
 ### Fixed (breaking default change) — ADP §7.2 / §7.3 terminal state classification
