@@ -5,6 +5,31 @@ All notable changes to `@ai-manifests/adp-agent-anchor` will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-05-02
+
+### Fixed (packaging)
+- **`@ai-manifests/adp-agent` is now a `peerDependency` at `^0.5.0`** (was a
+  regular `dependency` at `^0.3.0`). The anchor extends the agent runtime
+  rather than embedding it; the regular-dep pin produced a duplicate install
+  in consumers (their top-level `^0.5.0` resolved to `0.5.0`, but the
+  anchor's nested `^0.3.0` constraint forced npm to install `0.3.0` under
+  `node_modules/@ai-manifests/adp-agent-anchor/node_modules/`). The
+  `0.4.0` and `0.5.0` CHANGELOG entries described this dep as a peer-dep
+  but the actual `package.json` was never updated to match. This release
+  brings the manifest into agreement with the documented design.
+- A matching `devDependency` on `@ai-manifests/adp-agent@^0.5.0` is added
+  so the anchor's own build and test commands resolve the runtime locally.
+
+### Migration
+- Consumers who already declare `@ai-manifests/adp-agent` at the top level
+  of their `package.json` (the supported configuration) need only run
+  `npm install` to deduplicate. The previously-installed nested `0.3.0`
+  copy is removed; the top-level `0.5.x` copy is the only install left.
+- Consumers who relied on the anchor pulling in `@ai-manifests/adp-agent`
+  transitively (i.e. did not declare it themselves) must add it as a
+  direct dependency. This was already the documented pattern in the
+  README; the manifest now enforces it.
+
 ## [0.5.0] - 2026-05-02
 
 ### Changed
