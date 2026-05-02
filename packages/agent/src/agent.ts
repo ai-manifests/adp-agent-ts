@@ -71,7 +71,19 @@ export class AdpAgent {
     this._journal = options.journal ?? new JsonlJournal(config.journalDir);
     this._app = options.app ?? express();
     if (!options.skipBodyParser) {
-      this._app.use(express.json({ limit: '1mb' }));
+      // Capture the raw request bytes alongside the parsed JSON. Trigger
+      // plugins (e.g. Gitea webhooks) need to verify HMAC signatures over
+      // the exact bytes they received; without this, a downstream router's
+      // own `express.json({ verify })` middleware never fires (the global
+      // parser has already consumed the stream) and signature verification
+      // falls back to `JSON.stringify(req.body)`, which produces re-encoded
+      // bytes that don't match the sender's hash.
+      this._app.use(express.json({
+        limit: '1mb',
+        verify: (req: Request & { rawBody?: string }, _res, buf) => {
+          req.rawBody = buf.toString('utf8');
+        },
+      }));
     }
     this._buildRoutes();
   }

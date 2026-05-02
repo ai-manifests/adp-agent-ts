@@ -5,6 +5,38 @@ All notable changes to `@ai-manifests/adp-agent` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-05-02
+
+### Fixed — global body parser now exposes `req.rawBody`
+
+The `AdpAgent` constructor installs a global `express.json()` body parser
+on its app (unless `skipBodyParser: true`). Routers mounted later that
+need the raw request bytes — most notably webhook receivers that verify
+HMAC signatures over the exact wire payload — used to install their own
+`express.json({ verify })` middleware to capture `req.rawBody`. That
+middleware never fired in practice: the global parser had already
+consumed the request stream, so the second parser ran on an empty
+buffer and the `verify` callback never received the bytes.
+
+The downstream symptom was that any HMAC-verifying webhook plugin (e.g.
+the Gitea trigger plugin in `adp-federation-prototype`) silently fell
+back to `JSON.stringify(req.body)` — re-serialised JSON that does not
+byte-match the sender's payload — and rejected every legitimate
+delivery as "Invalid signature".
+
+The fix attaches a `verify` callback to the global parser itself, which
+populates `req.rawBody` (UTF-8 string) for every JSON request. Trigger
+plugins that previously installed their own redundant body parser can
+keep doing so (it's a no-op now) or read `req.rawBody` directly.
+
+### Compatibility
+- Adopters running `skipBodyParser: true` and supplying their own body
+  parser must capture `rawBody` themselves if they need it. The
+  documented pattern is shown in the `agent.ts` constructor: pass
+  `verify: (req, _res, buf) => { req.rawBody = buf.toString('utf8'); }`
+  on `express.json()`.
+- No API change; no breaking change.
+
 ## [0.5.2] - 2026-05-02
 
 ### Fixed — `/api/record-outcome` gossip used wildcard token lookup
