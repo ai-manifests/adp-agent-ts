@@ -25,6 +25,7 @@ export type {
   AuthConfig,
   EvaluatorConfig,
   EvaluationResult,
+  EvaluatorAgentContext,
   PeerConfig,
   PluginsConfig,
   AgentConfig,
@@ -127,6 +128,7 @@ export type {
 
 // --- Evaluator ---
 export { evaluate } from './evaluator.js';
+export { evaluateLlm, renderTemplate } from './llm-evaluator.js';
 
 // --- MCP server ---
 export { createMcpServer, mountMcpEndpoints } from './mcp-server.js';

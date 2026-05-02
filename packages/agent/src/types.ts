@@ -107,18 +107,54 @@ export interface AuthConfig {
 // --- Evaluator config ---
 
 export interface EvaluatorConfig {
-  /** 'shell' runs a command; 'static' uses defaultVote/defaultConfidence */
-  kind: 'shell' | 'static';
+  /**
+   * - 'static' uses defaultVote/defaultConfidence
+   * - 'shell' runs a command and parses its output
+   * - 'llm' calls an LLM provider (Anthropic / OpenAI) with structured-output
+   *   forcing so the response is guaranteed to be a valid `EvaluationResult`
+   */
+  kind: 'shell' | 'static' | 'llm';
   /** Shell command to run (for kind: 'shell') */
   command?: string;
   /** Working directory for the command */
   workDir?: string;
-  /** Kill the command after this many milliseconds */
+  /** Kill the command / abort the LLM request after this many milliseconds */
   timeoutMs?: number;
   /** How to interpret stdout: 'json' parses EvaluationResult, 'exit-code' maps 0=approve/non-zero=reject */
   parseOutput?: 'json' | 'exit-code';
   /** Allowed command prefixes (S8 sandboxing). If set, command must start with one of these. */
   allowedCommands?: string[];
+
+  // --- LLM evaluator fields (kind: 'llm') ---
+  /** Which LLM API to call. */
+  provider?: 'anthropic' | 'openai';
+  /** Provider model id (e.g. `claude-opus-4-7`, `gpt-5`). */
+  model?: string;
+  /**
+   * System prompt — the agent's identity and judging criteria. Stable
+   * across actions, so providers may cache it server-side (Anthropic
+   * prompt caching is enabled when this is set).
+   */
+  systemPrompt?: string;
+  /**
+   * User-message template. The following placeholders are substituted at
+   * call time: `{action.kind}`, `{action.target}`, `{action.parameters}`,
+   * `{agent.id}`, `{agent.decisionClass}`.
+   */
+  userTemplate?: string;
+  /** Max tokens for the response (default 1024). */
+  maxTokens?: number;
+  /** Sampling temperature (default 0 — deterministic). */
+  temperature?: number;
+}
+
+/**
+ * Caller-supplied identity context, threaded into LLM evaluator prompts so
+ * the same model can act as different agents with different judging criteria.
+ */
+export interface EvaluatorAgentContext {
+  agentId: string;
+  decisionClass: string;
 }
 
 export interface EvaluationResult {

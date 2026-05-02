@@ -5,6 +5,56 @@ All notable changes to `@ai-manifests/adp-agent` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-05-02
+
+### Added — `llm` evaluator kind
+
+New `EvaluatorConfig.kind: 'llm'` lets an agent vote via an LLM provider
+(Anthropic or OpenAI) instead of a shell command or static defaults. The
+evaluator forces a structured response so the runtime always receives a
+valid `EvaluationResult`:
+
+- **Anthropic**: tool_use forced output (`tool_choice: { type: 'tool', name: 'submit_vote' }`).
+  System prompt is marked `cache_control: { type: 'ephemeral' }` so the
+  same prompt across many actions hits the prompt cache.
+- **OpenAI**: Structured Outputs (`response_format: json_schema, strict: true`).
+
+**New types** (exported from the package root):
+- `EvaluatorAgentContext` — `{ agentId, decisionClass }` threaded into prompt
+  templates so the same model can act as different agents.
+
+**New exports**:
+- `evaluateLlm(config, action, context)` — direct entry point if you want
+  to invoke the LLM evaluator outside the deliberation runner.
+- `renderTemplate(template, action, context)` — the template substituter,
+  exposed for testing and golden-vector use.
+
+**Config additions on `EvaluatorConfig`** (all optional, only consulted
+when `kind === 'llm'`):
+- `provider`: `'anthropic' | 'openai'`
+- `model`: provider model id
+- `systemPrompt`, `userTemplate` (with placeholders `{action.kind}`,
+  `{action.target}`, `{action.parameters}`, `{agent.id}`, `{agent.decisionClass}`)
+- `maxTokens` (default 1024), `temperature` (default 0)
+
+Provider API keys are read from environment (`ANTHROPIC_API_KEY` /
+`OPENAI_API_KEY`) — they are deliberately not part of the agent JSON
+config so config files can be committed without secrets.
+
+### Behaviour changes
+- `evaluate(config, action, context?)` now accepts an optional third
+  argument carrying the agent's identity. Existing callers that omit it
+  continue to work for `static` and `shell` kinds; the `llm` kind returns
+  an explicit `abstain` fallback if context is missing.
+- The single-agent `POST /api/propose` handler and the MCP propose tool
+  both pass the agent's `(agentId, decisionClasses[0])` automatically, so
+  agents configured with `kind: 'llm'` work without any caller change.
+
+### Tests
+- `tests/llm-evaluator.test.ts` — 11 tests covering template substitution,
+  config validation, Anthropic happy path + tool_use parsing, OpenAI
+  structured-output parsing, missing API key, and HTTP-error fallback.
+
 ## [0.5.3] - 2026-05-02
 
 ### Fixed — global body parser now exposes `req.rawBody`

@@ -197,7 +197,10 @@ export class AdpAgent {
     app.post('/api/propose', rateLimitApi, requireAuth, async (req: Request, res: Response) => {
       const { deliberationId, action, reversibilityTier } = req.body;
       const domain = config.decisionClasses[0];
-      const evalResult = await evaluate(config.evaluator, action);
+      const evalResult = await evaluate(config.evaluator, action, {
+        agentId: config.agentId,
+        decisionClass: domain,
+      });
 
       const vote = evalResult?.vote ?? config.defaultVote;
       const confidence = evalResult?.confidence ?? config.defaultConfidence;

@@ -27,7 +27,10 @@ function registerTools(mcpServer: McpServer, config: AgentConfig, journal: Journ
   }, async ({ deliberationId, actionKind, actionTarget, actionParameters, reversibilityTier }) => {
     const action = { kind: actionKind, target: actionTarget, parameters: actionParameters };
     const domain = config.decisionClasses[0];
-    const evalResult = await evaluate(config.evaluator, action);
+    const evalResult = await evaluate(config.evaluator, action, {
+      agentId: config.agentId,
+      decisionClass: domain,
+    });
     const vote = evalResult?.vote ?? config.defaultVote;
     const confidence = evalResult?.confidence ?? config.defaultConfidence;
     const conditionStrings = evalResult?.dissentConditions?.length ? evalResult.dissentConditions : config.dissentConditions;

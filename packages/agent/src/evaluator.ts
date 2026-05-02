@@ -1,6 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import type { EvaluatorConfig, EvaluationResult, Vote } from './types.js';
+import type { EvaluatorConfig, EvaluationResult, EvaluatorAgentContext, Vote } from './types.js';
+import { evaluateLlm } from './llm-evaluator.js';
 
 const execAsync = promisify(exec);
 
@@ -8,15 +9,28 @@ const execAsync = promisify(exec);
  * Run an evaluator plugin and return an EvaluationResult.
  * - 'static' returns null (caller uses defaults)
  * - 'shell' runs a command via shell and parses the output
+ * - 'llm' calls Anthropic / OpenAI with structured-output forcing
+ *
+ * `context` carries the agent's identity for prompt-template substitution
+ * in the llm path. It's optional so existing call sites that pre-date
+ * the llm evaluator continue to work for the static / shell paths.
  */
 export async function evaluate(
   config: EvaluatorConfig | undefined,
   action: { kind: string; target: string; parameters?: Record<string, string> },
+  context?: EvaluatorAgentContext,
 ): Promise<EvaluationResult | null> {
   if (!config || config.kind === 'static') return null;
 
   if (config.kind === 'shell') {
     return evaluateShell(config, action);
+  }
+
+  if (config.kind === 'llm') {
+    if (!context) {
+      return fallback('llm evaluator requires agent context (agentId + decisionClass)', 'abstain');
+    }
+    return evaluateLlm(config, action, context);
   }
 
   return null;
