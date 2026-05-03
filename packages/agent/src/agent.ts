@@ -157,7 +157,12 @@ export class AdpAgent {
             domain, { authority, source: `mcp-manifest:${config.agentId}#authorities` },
           ]),
         ),
-        journalEndpoint: `http://${config.domain}:${config.port}/adj/v0`,
+        // Default: internal `domain:port` URL, which works for peer-to-peer
+        // calls in the same network (loopback / hairpin). Override with
+        // `publicJournalEndpoint` when the agent sits behind a
+        // TLS-terminating proxy and external callers (e.g. the registry
+        // audit) need the proxy URL.
+        journalEndpoint: config.publicJournalEndpoint ?? `http://${config.domain}:${config.port}/adj/v0`,
         publicKey: config.auth?.publicKey ?? null,
         trustLevel: config.allowedPeers ? 'registered' : 'open',
       };

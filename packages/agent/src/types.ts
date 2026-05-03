@@ -314,6 +314,24 @@ export interface AgentConfig {
   agentId: string;
   port: number;
   domain: string;
+  /**
+   * Override the URL published as `manifest.journalEndpoint`. By default
+   * the manifest publishes `http://{domain}:{port}/adj/v0`, which is
+   * correct for peer-to-peer calls inside the same network (where
+   * `domain:port` resolves to the agent's listening socket via
+   * loopback / hairpin). When the agent sits behind a TLS-terminating
+   * proxy (Cloudflare, Caddy, an ingress controller), external peers
+   * can't reach the internal port and need the proxy URL instead.
+   *
+   * Example: an agent listening on `:3001` behind
+   * `https://test-runner.adp-federation.dev` should set
+   * `publicJournalEndpoint = 'https://test-runner.adp-federation.dev/adj/v0'`
+   * so external federations and the registry's calibration audit can
+   * reach it. Internal peer calls in the same network keep working
+   * because they use `peer.url` from the deliberation runner's peer
+   * list — they don't read this field.
+   */
+  publicJournalEndpoint?: string;
   decisionClasses: string[];
   authorities: Record<string, number>;
   stakeMagnitude: StakeMagnitude;
