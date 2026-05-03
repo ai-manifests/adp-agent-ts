@@ -53,7 +53,10 @@ export async function evaluateLlm(
   const userMessage = renderTemplate(config.userTemplate, action, context);
   const timeoutMs = config.timeoutMs ?? 30_000;
   const maxTokens = config.maxTokens ?? 1024;
-  const temperature = config.temperature ?? 0;
+  // `temperature` is intentionally NOT defaulted. Newer Anthropic models
+  // (and some OpenAI reasoning models) reject the parameter even at 0,
+  // so we only forward it when the caller explicitly provided a value.
+  const temperature = config.temperature;
 
   try {
     if (provider === 'anthropic') {
@@ -69,7 +72,7 @@ export async function evaluateLlm(
 interface CallOptions {
   timeoutMs: number;
   maxTokens: number;
-  temperature: number;
+  temperature: number | undefined;
 }
 
 async function callAnthropic(
@@ -80,10 +83,9 @@ async function callAnthropic(
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set in environment');
 
-  const body = {
+  const body: Record<string, unknown> = {
     model: config.model,
     max_tokens: opts.maxTokens,
-    temperature: opts.temperature,
     system: [{ type: 'text', text: config.systemPrompt!, cache_control: { type: 'ephemeral' } }],
     tools: [{
       name: 'submit_vote',
@@ -93,6 +95,7 @@ async function callAnthropic(
     tool_choice: { type: 'tool', name: 'submit_vote' },
     messages: [{ role: 'user', content: userMessage }],
   };
+  if (opts.temperature !== undefined) body.temperature = opts.temperature;
 
   const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -124,9 +127,8 @@ async function callOpenAi(
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY not set in environment');
 
-  const body = {
+  const body: Record<string, unknown> = {
     model: config.model,
-    temperature: opts.temperature,
     max_completion_tokens: opts.maxTokens,
     messages: [
       { role: 'system', content: config.systemPrompt! },
@@ -137,6 +139,7 @@ async function callOpenAi(
       json_schema: { name: 'submit_vote', schema: VOTE_SCHEMA, strict: true },
     },
   };
+  if (opts.temperature !== undefined) body.temperature = opts.temperature;
 
   const res = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
