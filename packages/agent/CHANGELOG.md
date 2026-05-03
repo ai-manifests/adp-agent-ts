@@ -5,6 +5,31 @@ All notable changes to `@ai-manifests/adp-agent` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-05-02
+
+### Added — `AgentConfig.publicJournalEndpoint`
+
+`manifest.journalEndpoint` defaulted to `http://{domain}:{port}/adj/v0`,
+which is correct for peer-to-peer calls inside the same network (where
+hairpin DNS resolves the domain to the local listener) but wrong for
+external callers — e.g. the registry's calibration audit, or a peer
+federation querying our well-known. Behind a TLS-terminating proxy
+(Cloudflare → Caddy → internal port), external clients can't reach the
+internal port and the manifest URL is unreachable.
+
+The new optional `AgentConfig.publicJournalEndpoint` field overrides the
+manifest URL when set. Internal peer calls in the same network are
+unaffected — they use `peer.url` from the deliberation runner's peer
+list, not this field.
+
+### Behaviour change
+- None for federations that don't set the new field — same default URL,
+  same behaviour.
+- Adopters fronting their agent with a proxy should set
+  `publicJournalEndpoint` to the proxy URL (e.g.
+  `"https://my-agent.example.com/adj/v0"`) so the registry's audit and
+  external peers can fetch calibration successfully.
+
 ## [0.6.2] - 2026-05-02
 
 ### Fixed — peer fan-out + per-call timeouts
