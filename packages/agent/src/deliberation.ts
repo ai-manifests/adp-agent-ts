@@ -88,6 +88,29 @@ export interface PeerTransport {
   registerAgent(peerUrl: string, agentId: string): void;
 }
 
+/**
+ * Per-call timeout for outbound peer requests. Without this an unresponsive
+ * peer hangs the deliberation indefinitely — `fetch()` has no default
+ * timeout. The proposal phase is the worst offender because LLM-evaluator
+ * peers can take seconds-to-tens-of-seconds, and 8+ peer federations
+ * compound the wait.
+ */
+const PEER_FETCH_TIMEOUT_MS = 60_000;
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = PEER_FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** HTTP transport with optional bearer token authentication. */
 export class HttpTransport implements PeerTransport {
   private auth: AuthConfig | undefined;
@@ -107,7 +130,7 @@ export class HttpTransport implements PeerTransport {
   }
 
   async fetchManifest(peerUrl: string): Promise<AgentManifest> {
-    const res = await fetch(`${peerUrl}/.well-known/adp-manifest.json`);
+    const res = await fetchWithTimeout(`${peerUrl}/.well-known/adp-manifest.json`, {}, 10_000);
     if (!res.ok) throw new Error(`Manifest fetch failed: ${peerUrl} → ${res.status}`);
     const manifest = await res.json() as AgentManifest;
     this.peerAgentIds.set(peerUrl, manifest.agentId);
@@ -116,14 +139,18 @@ export class HttpTransport implements PeerTransport {
 
   async fetchCalibration(journalEndpoint: string, agentId: string, domain: string): Promise<CalibrationScore> {
     try {
-      const res = await fetch(`${journalEndpoint}/calibration?agent_id=${encodeURIComponent(agentId)}&domain=${encodeURIComponent(domain)}`);
+      const res = await fetchWithTimeout(
+        `${journalEndpoint}/calibration?agent_id=${encodeURIComponent(agentId)}&domain=${encodeURIComponent(domain)}`,
+        {},
+        10_000,
+      );
       if (res.ok) return res.json() as Promise<CalibrationScore>;
     } catch { /* default */ }
     return { value: 0.5, sampleSize: 0, staleness: 0 };
   }
 
   async requestProposal(peerUrl: string, deliberationId: string, action: any, tier: string): Promise<Proposal> {
-    const res = await fetch(`${peerUrl}/api/propose`, {
+    const res = await fetchWithTimeout(`${peerUrl}/api/propose`, {
       method: 'POST', headers: this.headers(peerUrl),
       body: JSON.stringify({ deliberationId, action, reversibilityTier: tier }),
     });
@@ -132,7 +159,7 @@ export class HttpTransport implements PeerTransport {
   }
 
   async sendFalsification(peerUrl: string, conditionId: string, round: number, evidenceAgentId: string) {
-    const res = await fetch(`${peerUrl}/api/respond-falsification`, {
+    const res = await fetchWithTimeout(`${peerUrl}/api/respond-falsification`, {
       method: 'POST', headers: this.headers(peerUrl),
       body: JSON.stringify({ conditionId, round, evidenceAgentId }),
     });
@@ -140,10 +167,10 @@ export class HttpTransport implements PeerTransport {
   }
 
   async pushJournalEntries(peerUrl: string, entries: JournalEntry[]): Promise<void> {
-    await fetch(`${peerUrl}/adj/v0/entries`, {
+    await fetchWithTimeout(`${peerUrl}/adj/v0/entries`, {
       method: 'POST', headers: this.headers(peerUrl),
       body: JSON.stringify(entries),
-    });
+    }, 10_000);
   }
 }
 
@@ -199,11 +226,25 @@ export class PeerDeliberation {
     const peerUrls = this.peers.map(p => p.url);
     const budget = options.budget;
 
-    // 1. Discover peers + self
-    for (const peer of this.peers) {
-      const manifest = await this.transport.fetchManifest(peer.url);
-      this.manifests[manifest.agentId] = manifest;
-      this.peerUrlMap[manifest.agentId] = peer.url;
+    // 1. Discover peers + self — fan out manifest fetches in parallel so a
+    //    slow or briefly-unavailable peer doesn't block discovery for the
+    //    whole federation. Failed peers are dropped from the participant
+    //    list (logged but not fatal); the deliberation still runs against
+    //    whoever responded.
+    const discoveryResults = await Promise.allSettled(
+      this.peers.map(async peer => {
+        const manifest = await this.transport.fetchManifest(peer.url);
+        return { url: peer.url, manifest };
+      }),
+    );
+    for (const r of discoveryResults) {
+      if (r.status === 'fulfilled') {
+        const { url, manifest } = r.value;
+        this.manifests[manifest.agentId] = manifest;
+        this.peerUrlMap[manifest.agentId] = url;
+      } else {
+        console.warn(`[deliberation] peer discovery failed: ${r.reason}`);
+      }
     }
 
     // Self-manifest (the initiating agent). The initiator never fetches its
@@ -239,31 +280,42 @@ export class PeerDeliberation {
       action, participants, config: { maxRounds: 3, participationFloor: 0.50 },
     });
 
-    // 2. Request proposals from peers (with signature verification)
-    for (const [agentId, manifest] of Object.entries(this.manifests)) {
-      // Check allowed peers (sybil resistance)
-      if (this.self.allowedPeers && !this.self.allowedPeers.includes(agentId)) {
-        console.warn(`[deliberation] Peer ${agentId} not in allowedPeers — skipping`);
+    // 2. Request proposals from peers — fan out in parallel.
+    //    Sequential proposal collection is the worst hotspot for
+    //    LLM-evaluator peers: each request blocks on a network round-trip
+    //    plus the peer's own LLM call (5–30s), so 8 sequential peers can
+    //    take 2+ minutes. Promise.allSettled lets every peer's proposal
+    //    fly concurrently — wall-clock cost = max(peer time), not sum.
+    //    A peer that times out, returns 5xx, or fails signature
+    //    verification is logged and dropped; the deliberation continues
+    //    with whoever produced a valid proposal (participation_floor
+    //    enforces a minimum quorum downstream).
+    const peerEntries = Object.entries(this.manifests).filter(
+      ([agentId]) => !this.self.allowedPeers || this.self.allowedPeers.includes(agentId),
+    );
+
+    const peerProposalResults = await Promise.allSettled(
+      peerEntries.map(async ([agentId, manifest]) => {
+        const proposal = await this.transport.requestProposal(this.peerUrlMap[agentId], dlbId, action, tier);
+        if (this.self.auth && !this.self.auth.allowUnsignedLocal) {
+          const valid = await this.verifyReceivedProposal(proposal, manifest);
+          if (!valid) throw new Error(`signature verification failed for ${agentId}`);
+        }
+        const domain = Object.keys(manifest.domainAuthorities)[0];
+        const authority = manifest.domainAuthorities[domain]?.authority ?? 0.5;
+        const cal = await this.transport.fetchCalibration(manifest.journalEndpoint, agentId, domain);
+        return { agentId, manifest, proposal, domain, authority, cal };
+      }),
+    );
+
+    for (const r of peerProposalResults) {
+      if (r.status === 'rejected') {
+        console.warn(`[deliberation] peer proposal failed: ${r.reason}`);
         continue;
       }
-
-      const proposal = await this.transport.requestProposal(this.peerUrlMap[agentId], dlbId, action, tier);
-
-      // Verify signature if auth is configured
-      if (this.self.auth && !this.self.auth.allowUnsignedLocal) {
-        const valid = await this.verifyReceivedProposal(proposal, manifest);
-        if (!valid) {
-          console.warn(`[deliberation] Proposal from ${agentId} failed signature verification — skipping`);
-          continue;
-        }
-      }
-
+      const { agentId, proposal, domain, authority, cal } = r.value;
       this.proposals.push(proposal);
       this.contributionTracker.recordProposal(agentId);
-
-      const domain = Object.keys(manifest.domainAuthorities)[0];
-      const authority = manifest.domainAuthorities[domain]?.authority ?? 0.5;
-      const cal = await this.transport.fetchCalibration(manifest.journalEndpoint, agentId, domain);
       this.weights[agentId] = computeWeight(authority, cal, domain, proposal.stake.magnitude);
 
       this.journalEntries.push({
@@ -500,11 +552,13 @@ export class PeerDeliberation {
       this.journalEntries.push(settlementEntry);
     }
 
-    // 6. Push journal to all peers + self (self via HTTP for consistency)
+    // 6. Push journal to all peers + self in parallel. Best-effort —
+    //    a peer that's gone away post-proposal shouldn't block journal
+    //    distribution to the others (or to self, which writes locally).
     const allUrls = [...this.peers.map(p => p.url), selfUrl];
-    for (const url of allUrls) {
-      await this.transport.pushJournalEntries(url, this.journalEntries);
-    }
+    await Promise.allSettled(
+      allUrls.map(url => this.transport.pushJournalEntries(url, this.journalEntries)),
+    );
 
     return {
       deliberationId: dlbId,

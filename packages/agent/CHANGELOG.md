@@ -5,6 +5,48 @@ All notable changes to `@ai-manifests/adp-agent` will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-05-02
+
+### Fixed — peer fan-out + per-call timeouts
+
+`PeerDeliberation` previously discovered peers, requested proposals,
+and pushed journal entries **sequentially** with **no per-call timeout**.
+That worked fine for a 3-agent federation but degraded badly as the
+peer list grew, and broke entirely once any peer ran an LLM evaluator
+(5–30s per proposal):
+
+- Sequential proposal collection: with 8 peers each taking ~10s, the
+  proposal phase took ~80s — past Gitea webhook timeouts and past most
+  reverse-proxy idle limits.
+- No timeout on `fetch()`: an unresponsive peer hung the deliberation
+  indefinitely. `journalEntries` is buffered in memory until the end of
+  `run()`, so a mid-flight hang produced no journal record at all —
+  invisible failure.
+
+This release:
+
+- **`HttpTransport` adds `AbortController` timeouts** to every outbound
+  call (`fetchManifest`, `fetchCalibration`, `requestProposal`,
+  `sendFalsification`, `pushJournalEntries`). Default 60s for proposal
+  requests (LLM-friendly), 10s for everything else.
+- **Peer discovery is now parallel** via `Promise.allSettled`. Failed
+  peers are logged and dropped from the participant set; the deliberation
+  still runs against whoever responded.
+- **Proposal collection is now parallel** via `Promise.allSettled`.
+  Wall-clock cost = max(peer time), not sum. A peer that times out,
+  returns 5xx, or fails signature verification is logged and dropped;
+  the deliberation continues with whoever produced a valid proposal
+  (`participation_floor` enforces the minimum quorum downstream).
+- **Final journal gossip is now parallel** via `Promise.allSettled`.
+  A peer that's gone away post-proposal no longer blocks journal
+  distribution to the others.
+
+### Behaviour change
+- Federations with unreachable peers may see proposals dropped where
+  they were previously held indefinitely. This is the spec-correct
+  behaviour — a peer that doesn't respond should not be counted as a
+  participant.
+
 ## [0.6.1] - 2026-05-02
 
 ### Fixed — LLM evaluator: omit `temperature` when caller doesn't set it
