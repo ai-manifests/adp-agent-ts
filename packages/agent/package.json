@@ -1,0 +1,75 @@
+{
+  "name": "@ai-manifests/adp-agent",
+  "version": "0.6.3",
+  "description": "Reference implementation of the Agent Deliberation Protocol (ADP). Protocol runtime for agents that deliberate, sign proposals, journal outcomes, and publish signed calibration snapshots.",
+  "author": "David H. Friedel Jr. — MarketAlly Pte Ltd",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    },
+    "./journal": {
+      "import": "./dist/journal.js",
+      "types": "./dist/journal.d.ts"
+    },
+    "./journal-sqlite": {
+      "import": "./dist/journal-sqlite.js",
+      "types": "./dist/journal-sqlite.d.ts"
+    }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "adp",
+    "agent-deliberation-protocol",
+    "multi-agent",
+    "consensus",
+    "calibration"
+  ],
+  "license": "Apache-2.0",
+  "homepage": "https://adp-manifest.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://git.marketally.com/ai-manifests/adp-agent",
+    "directory": "packages/agent"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@noble/ed25519": "^2.3.0",
+    "express": "^4.21.0",
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "better-sqlite3": "^12.8.0"
+  },
+  "peerDependenciesMeta": {
+    "better-sqlite3": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0"
+  }
+}
